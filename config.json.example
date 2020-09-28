@@ -1,0 +1,29 @@
+{
+    "log": [
+        {
+            "syncer": "std",
+            "level": "debug"
+        },
+        {
+            "syncer": "file",
+            "level": "debug",
+            "file_name": "log/all.log",
+            "max_size": 5,
+            "max_age": 1,
+            "max_backups": 7
+        },
+        {
+            "syncer": "file",
+            "level": "error",
+            "file_name": "log/err.log",
+            "max_size": 5,
+            "max_age": 1,
+            "max_backups": 7
+        }
+    ],
+    "broker": {
+        "queue": "queue_file",
+        "topic_in": "go.srv.file"
+    },
+    "dir_base": "/data"
+}

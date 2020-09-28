@@ -1,0 +1,7 @@
+.env
+.vscode
+bin
+config.json
+go.sum
+log
+vendor
