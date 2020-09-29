@@ -37,7 +37,6 @@ type File struct {
 // OnMessage function
 func (s *File) OnMessage(ctx context.Context, message *proto.Message) (err error) {
 	md, _ := metadata.FromContext(ctx)
-	log.Debugf("[File] Request: metadata=[%+v] data=[%s]", md, message.Data)
 	defer func() {
 		if err != nil {
 			log.Errorf("[File] Store failed!: err=[%s] metadata=[%+v] data=[%s]", err.Error(), md, message.Data)

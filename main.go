@@ -6,6 +6,7 @@ import (
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/server"
 
+	userver "github.com/bimoyong/go-util/server"
 	"gitlab.com/bimoyong/go-file/config"
 	sub "gitlab.com/bimoyong/go-file/subscriber"
 )
@@ -15,6 +16,11 @@ func main() {
 
 	client.DefaultClient = service.Client()
 	server.DefaultServer = service.Server()
+
+	server.DefaultServer.Init(
+		server.WrapSubscriber(userver.LogWrapper),
+		server.WrapSubscriber(userver.AuthWrapper),
+	)
 
 	service.Init(
 		micro.BeforeStart(config.Init),
