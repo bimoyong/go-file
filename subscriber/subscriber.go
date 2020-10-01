@@ -37,21 +37,27 @@ func Close() error {
 	return nil
 }
 
-func postback1(m model.Postback, md metadata.Metadata) (pub micro.Publisher, err error) {
-	topic, ok := md.Get("Postback")
-	if !ok {
-		return
+func publish(m model.Postback, md metadata.Metadata) (err error) {
+	topics := config.Get("broker", "topic_out").StringSlice([]string{})
+	postback, ok := md.Get("Postback")
+	if ok {
+		topics = append(topics, postback)
+		md.Delete("Postback")
 	}
-	md.Delete("Postback")
 
-	p := micro.NewPublisher(topic, client.DefaultClient)
-	ctx := metadata.NewContext(context.Background(), md)
-	msg := raw.Frame{}
-	msg.Data, _ = json.Marshal(m)
-	if err = p.Publish(ctx, &msg); err != nil {
-		return
+	for _, topic := range topics {
+		var p micro.Publisher
+		if p, ok = PostbackMap[topic]; !ok {
+			p = micro.NewPublisher(topic, client.DefaultClient)
+		}
+		ctx := metadata.NewContext(context.Background(), md)
+		msg := raw.Frame{}
+		msg.Data, _ = json.Marshal(m)
+		if err = p.Publish(ctx, &msg); err != nil {
+			return
+		}
+		PostbackMap[topic] = p
 	}
-	pub = p
 
 	return
 }

@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/codec/proto"
 	"github.com/micro/go-micro/v2/config"
 	log "github.com/micro/go-micro/v2/logger"
@@ -52,7 +51,6 @@ func (s *File) OnMessage(ctx context.Context, message *proto.Message) (err error
 
 	id, _ := md.Get("ID")
 	domain, _ := md.Get("Domain")
-	postback, _ := md.Get("Postback")
 
 	var fileName string
 	dirBase := filepath.Join(config.Get("dir_base").String(""), domain)
@@ -70,20 +68,16 @@ func (s *File) OnMessage(ctx context.Context, message *proto.Message) (err error
 	}
 	log.Infof("[File] Save to disk success: id=[%s], file_name=[%s]", id, fileName)
 
-	var pub micro.Publisher
 	pb := model.Postback{
-		// ID:        h.ID,
-		Name:      fileName[len(config.Get("dir_base").String("")):],
 		FullName:  fileName,
 		Timestamp: time.Now(),
 	}
-	if pub, err = postback1(pb, umetadata.NewMetadata(md)); err != nil {
+	md.Set("Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
+	pb.Name, _ = filepath.Split(fileName)
+	if err = publish(pb, umetadata.NewMetadata(md)); err != nil {
 		log.Errorf("[File] Postback failed!: metadata=[%+v] msg=[%+v]", md, pb)
 	} else {
 		log.Debugf("[File] Postback: metadata=[%+v] msg=[%+v]", md, pb)
-	}
-	if _, ok := PostbackMap[postback]; !ok {
-		PostbackMap[postback] = pub
 	}
 
 	return
