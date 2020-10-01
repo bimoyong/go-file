@@ -24,7 +24,7 @@
     "broker": {
         "queue": "queue_file",
         "topic_in": "go.srv.file",
-        "topic_out": "go.srv.store"
+        "topic_out": ["go.srv.store"]
     },
     "dir_base": "/data"
 }
