@@ -69,8 +69,7 @@ func (s *File) OnMessage(ctx context.Context, message *proto.Message) (err error
 	log.Infof("[File] Save to disk success: id=[%s], file_name=[%s]", id, fileName)
 
 	pb := model.Postback{
-		FullName:  fileName,
-		Timestamp: time.Now(),
+		FullName: fileName,
 	}
 	md.Set("Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
 	pb.Name, _ = filepath.Split(fileName)
