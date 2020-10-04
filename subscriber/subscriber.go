@@ -12,7 +12,6 @@ import (
 	"github.com/micro/go-micro/v2/server"
 
 	raw "github.com/micro/go-micro/v2/codec/bytes"
-	"gitlab.com/bimoyong/go-file/model"
 )
 
 var (
@@ -37,7 +36,7 @@ func Close() error {
 	return nil
 }
 
-func publish(m model.Postback, md metadata.Metadata) (err error) {
+func publish(m interface{}, md metadata.Metadata) (err error) {
 	topics := config.Get("broker", "topic_out").StringSlice([]string{})
 	postback, ok := md.Get("Postback")
 	if ok {

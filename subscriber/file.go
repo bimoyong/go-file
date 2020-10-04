@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha1"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +24,6 @@ import (
 
 	ufile "github.com/bimoyong/go-util/file"
 	umetadata "github.com/bimoyong/go-util/metadata"
-	"gitlab.com/bimoyong/go-file/model"
 )
 
 // File struct
@@ -36,124 +33,91 @@ type File struct {
 // OnMessage function
 func (s *File) OnMessage(ctx context.Context, message *proto.Message) (err error) {
 	md, _ := metadata.FromContext(ctx)
+	id, _ := md.Get("ID")
+	domain, _ := md.Get("Domain")
 	defer func() {
 		if err != nil {
 			log.Errorf("[File] Store failed!: err=[%s] metadata=[%+v] data=[%s]", err.Error(), md, message.Data)
 		}
 	}()
 
-	var msg model.Message
+	var msg map[string]string
 	if err = json.Unmarshal(message.Data, &msg); err != nil {
 		err = fmt.Errorf("Cannot decode message: err=[%s]", err.Error())
 
 		return
 	}
-
-	id, _ := md.Get("ID")
-	domain, _ := md.Get("Domain")
+	var field string
+	var data string
+	for field, data = range msg {
+		break
+	}
+	if field == "" {
+		return
+	}
 
 	var fileName string
 	dirBase := filepath.Join(config.Get("dir_base").String(""), domain)
-	if fileName, err = generateFileName(msg, dirBase); err != nil {
+	if fileName, err = generateFileName(data, dirBase, md); err != nil {
 		err = fmt.Errorf("Cannot generate file name: err=[%s] dir_base=[%s]", err.Error(), dirBase)
 
 		return
 	}
 	log.Debug("[File] Generate file name: ", fileName)
 
-	if err = save2Disk(msg.Kind, fileName, msg.File); err != nil {
+	r := strings.NewReader(data)
+	if _, err = save2Disk(fileName, r); err != nil {
 		err = fmt.Errorf("Cannot save to disk: err=[%s] file_name=[%s]", err.Error(), fileName)
 
 		return
 	}
 	log.Infof("[File] Save to disk success: id=[%s], file_name=[%s]", id, fileName)
 
-	pb := model.Postback{
-		FullName: fileName,
+	postback := map[string]interface{}{
+		field: fileName,
 	}
 	md.Set("Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
-	pb.Name, _ = filepath.Split(fileName)
-	if err = publish(pb, umetadata.NewMetadata(md)); err != nil {
-		log.Errorf("[File] Postback failed!: metadata=[%+v] msg=[%+v]", md, pb)
+	if err = publish(postback, umetadata.NewMetadata(md)); err != nil {
+		log.Errorf("[File] Postback failed!: metadata=[%+v] msg=[%+v]", md, postback)
 	} else {
-		log.Debugf("[File] Postback: metadata=[%+v] msg=[%+v]", md, pb)
+		log.Debugf("[File] Postback: metadata=[%+v] msg=[%+v]", md, postback)
 	}
 
 	return
 }
 
-func generateFileName(m model.Message, base string) (fileName string, err error) {
-	var b []byte
-	if m.Name == "" {
-		b, err = base64.StdEncoding.DecodeString(m.File)
-		m.Name = hash(b)
-	}
-
-	mid, name := filepath.Split(m.Name)
-	fileName = filepath.Join(base, mid, time.Now().Format("2006-01-02"), name)
-	base, _ = filepath.Split(fileName)
+func generateFileName(data string, base string, md metadata.Metadata) (fileName string, err error) {
+	domain, _ := md.Get("Domain")
+	alias, _ := md.Get("Alias")
+	resource, _ := md.Get("Resource")
+	base = filepath.Join(base, domain, alias, resource, time.Now().Format("2006-01-02"))
 	if err = ufile.CheckOrMkdirAll(base); err != nil {
 		return
 	}
 
-	// TODO: make this more flexible
+	var b []byte
+	b, err = base64.StdEncoding.DecodeString(data)
+	r := bytes.NewReader(b)
 	var ext string
-	switch {
-	case m.Kind.Enabled(model.Base64Kind):
-		r := bytes.NewReader(b)
-		if _, ext, err = image.DecodeConfig(r); err != nil {
-			return
-		}
-		fileName = fileName + "." + ext
-	case m.Kind.Enabled(model.URLKind):
-		if "" == filepath.Ext(fileName) {
-			fileName = fileName + filepath.Ext(m.File)
-		}
-	}
-
-	return
-}
-
-func save2Disk(kind model.Kind, fileName string, data string) (err error) {
-	// TODO: make this more flexible
-	if kind.Enabled(model.URLKind) {
-		err = download2Disk(fileName, data)
-
+	if _, ext, err = image.DecodeConfig(r); err != nil {
 		return
 	}
 
-	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(data))
-
-	_, err = writeFile(fileName, dec)
+	fileName = filepath.Join(base, hash(b)+"."+ext)
 
 	return
 }
 
-func download2Disk(fileName string, data string) (err error) {
-	cli := http.Client{
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-	}
-
-	var rsp *http.Response
-	if rsp, err = cli.Get(data); err != nil {
-		return
-	}
-	defer rsp.Body.Close()
-
-	_, err = writeFile(fileName, rsp.Body)
-
-	return
-}
-
-func writeFile(name string, reader io.Reader) (size int64, err error) {
+func save2Disk(fileName string, reader io.Reader) (size int64, err error) {
 	var f *os.File
-	if f, err = os.Create(name); err != nil {
+	if f, err = os.Create(fileName); err != nil {
 		return
 	}
 	f.SetWriteDeadline(time.Now().Add(time.Second * 60))
 	defer f.Close()
 
-	size, err = io.Copy(f, reader)
+	dec := base64.NewDecoder(base64.StdEncoding, reader)
+	size, err = io.Copy(f, dec)
 
 	return
 }
