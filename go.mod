@@ -1,4 +1,4 @@
-module gitlab.com/bimoyong/go-file
+module github.com/bimoyong/go-file
 
 go 1.14
 

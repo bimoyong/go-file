@@ -6,9 +6,9 @@ import (
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/server"
 
+	"github.com/bimoyong/go-file/config"
+	sub "github.com/bimoyong/go-file/subscriber"
 	userver "github.com/bimoyong/go-util/server"
-	"gitlab.com/bimoyong/go-file/config"
-	sub "gitlab.com/bimoyong/go-file/subscriber"
 )
 
 func main() {

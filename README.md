@@ -5,7 +5,7 @@ This is the File Service
 Generated with
 
 ```
-micro new gitlab.com/bimoyong/go-file --namespace=go --type=srv
+micro new github.com/bimoyong/go-file --namespace=go --type=srv
 ```
 
 ## Getting Started
