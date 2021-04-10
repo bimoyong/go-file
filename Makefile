@@ -2,11 +2,13 @@ OWNER=bimoyong
 ALIAS=file
 TYPE=srv
 IMAGE_NAME=${OWNER}/${ALIAS}-${TYPE}
-GIT_COMMIT=${shell git rev-parse --short HEAD}
-GIT_TAG=${shell git describe --abbrev=0 --tags --always --match "v*"}
-IMAGE_TAG=${GIT_TAG}-${GIT_COMMIT}
+COMMIT=${shell git rev-parse --short HEAD}
+TAG=${shell git describe --abbrev=0 --tags --always --match "v*"}
+IMAGE_TAG=${TAG}-${COMMIT}
 
 SERVER_NAME=go.${TYPE}.${ALIAS}
+
+all: build
 
 run:
 	# MICRO_REGISTRY=consul \
@@ -22,20 +24,28 @@ vendor:
 	go mod vendor
 
 proto:
+	# protoc --proto_path=${GOPATH}/pkg/mod:. --micro_out=. --go_out=. proto/file/file.proto
 
-ARCHS := arm arm64 amd64
 build: proto
-	for item in ${ARCHS}; do \
-		CGO_ENABLED=0 GOOS=linux GOARCH=$$item go build -o ./bin/$$item *.go; \
-		chmod +x ./bin/$$item; \
-	done
+	CGO_ENABLED=0 GOOS=linux go build -o ./bin/app *.go;
+	chmod +x ./bin/app;
 
 test:
 	go test -v ./... -cover
 
 docker:
-	docker build --build-arg NAME=${SERVER_NAME} -t ${IMAGE_NAME}:${IMAGE_TAG} .
-	docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+	docker build \
+		--build-arg NAME=${SERVER_NAME} \
+		--build-arg VER=${IMAGE_TAG} \
+		--build-arg GIT_AUTH=${GIT_AUTH} \
+		--build-arg GOPRIVATE=github.com/bimoyong/* \
+		--tag ${IMAGE_NAME}:${IMAGE_TAG} \
+		.
+
+	docker tag \
+		${IMAGE_NAME}:${IMAGE_TAG} \
+		${IMAGE_NAME}:latest
+
 	docker push ${IMAGE_NAME}:${IMAGE_TAG}
 	docker push ${IMAGE_NAME}:latest
 
@@ -44,6 +54,8 @@ docker_multiarch:
 		--platform linux/arm,linux/arm64,linux/amd64 \
 		--build-arg NAME=${SERVER_NAME} \
 		--build-arg VER=${IMAGE_TAG} \
+		--build-arg GIT_AUTH=${GIT_AUTH} \
+		--build-arg GOPRIVATE=github.com/bimoyong/* \
 		--tag ${IMAGE_NAME}:${IMAGE_TAG} \
 		--tag ${IMAGE_NAME}:latest \
 		--push \
