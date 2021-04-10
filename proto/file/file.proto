@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package brazn.srv.downloader;
+
+import "google/protobuf/timestamp.proto";
+
+service File {
+	rpc Upload(stream UploadReq) returns (UploadResp) {}
+}
+
+message UploadReq {
+	bytes data = 1;
+}
+
+message UploadResp {
+	string id = 1;
+	google.protobuf.Timestamp timestamp = 2;
+}
