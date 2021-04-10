@@ -9,7 +9,8 @@ service File {
 }
 
 message UploadReq {
-	bytes data = 1;
+	string checksum = 1;
+	bytes data = 2;
 }
 
 message UploadResp {
