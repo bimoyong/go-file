@@ -44,6 +44,7 @@ func NewFileEndpoints() []*api.Endpoint {
 
 type FileService interface {
 	Upload(ctx context.Context, opts ...client.CallOption) (File_UploadService, error)
+	Download(ctx context.Context, in *DownloadReq, opts ...client.CallOption) (File_DownloadService, error)
 }
 
 type fileService struct {
@@ -99,15 +100,66 @@ func (x *fileServiceUpload) Send(m *UploadReq) error {
 	return x.stream.Send(m)
 }
 
+func (c *fileService) Download(ctx context.Context, in *DownloadReq, opts ...client.CallOption) (File_DownloadService, error) {
+	req := c.c.NewRequest(c.name, "File.Download", &DownloadReq{})
+	stream, err := c.c.Stream(ctx, req, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if err := stream.Send(in); err != nil {
+		return nil, err
+	}
+	return &fileServiceDownload{stream}, nil
+}
+
+type File_DownloadService interface {
+	Context() context.Context
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Recv() (*DownloadResp, error)
+}
+
+type fileServiceDownload struct {
+	stream client.Stream
+}
+
+func (x *fileServiceDownload) Close() error {
+	return x.stream.Close()
+}
+
+func (x *fileServiceDownload) Context() context.Context {
+	return x.stream.Context()
+}
+
+func (x *fileServiceDownload) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *fileServiceDownload) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *fileServiceDownload) Recv() (*DownloadResp, error) {
+	m := new(DownloadResp)
+	err := x.stream.Recv(m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Server API for File service
 
 type FileHandler interface {
 	Upload(context.Context, File_UploadStream) error
+	Download(context.Context, *DownloadReq, File_DownloadStream) error
 }
 
 func RegisterFileHandler(s server.Server, hdlr FileHandler, opts ...server.HandlerOption) error {
 	type file interface {
 		Upload(ctx context.Context, stream server.Stream) error
+		Download(ctx context.Context, stream server.Stream) error
 	}
 	type File struct {
 		file
@@ -158,4 +210,44 @@ func (x *fileUploadStream) Recv() (*UploadReq, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (h *fileHandler) Download(ctx context.Context, stream server.Stream) error {
+	m := new(DownloadReq)
+	if err := stream.Recv(m); err != nil {
+		return err
+	}
+	return h.FileHandler.Download(ctx, m, &fileDownloadStream{stream})
+}
+
+type File_DownloadStream interface {
+	Context() context.Context
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Send(*DownloadResp) error
+}
+
+type fileDownloadStream struct {
+	stream server.Stream
+}
+
+func (x *fileDownloadStream) Close() error {
+	return x.stream.Close()
+}
+
+func (x *fileDownloadStream) Context() context.Context {
+	return x.stream.Context()
+}
+
+func (x *fileDownloadStream) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *fileDownloadStream) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *fileDownloadStream) Send(m *DownloadResp) error {
+	return x.stream.Send(m)
 }

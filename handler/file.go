@@ -28,6 +28,7 @@ type File struct {
 // Upload function
 func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err error) {
 	md, _ := metadata.FromContext(ctx)
+	var resp proto.UploadResp
 	var name string
 	var file *os.File
 	var fileinfo os.FileInfo
@@ -43,13 +44,13 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			return
 		}
 
-		log.Infof("Finished receiving file %s", name)
 	}()
 
 	for {
 		var chunk *proto.UploadReq
 		chunk, err = stream.Recv()
 		if err == io.EOF {
+			log.Infof("Finished receiving file %s", name)
 			break
 		}
 		if err != nil {
@@ -80,8 +81,14 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 				err = status.Errorf(codes.Internal, "error opening file %s: %s", name, err.Error())
 				return
 			}
-
 			defer file.Close()
+
+			fileinfo, _ = file.Stat()
+			tm, _ := ptypes.TimestampProto(fileinfo.ModTime())
+			resp = proto.UploadResp{
+				Id:        strings.TrimSuffix(fileinfo.Name(), path.Ext(fileinfo.Name())),
+				Timestamp: tm,
+			}
 		}
 
 		if _, err = file.Write(chunk.Data); err != nil {
@@ -89,12 +96,6 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			return
 		}
 
-		fileinfo, _ = file.Stat()
-		tm, _ := ptypes.TimestampProto(fileinfo.ModTime())
-		resp := proto.UploadResp{
-			Id:        strings.TrimSuffix(fileinfo.Name(), path.Ext(fileinfo.Name())),
-			Timestamp: tm,
-		}
 		if err = stream.SendMsg(&resp); err != nil {
 			return
 		}

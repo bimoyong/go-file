@@ -55,6 +55,8 @@ func upload(ctx context.Context, req *proto.UploadReq, rd io.Reader) (err error)
 	}
 	defer strm.Close()
 
+	var resp proto.UploadResp
+
 	// sent data in 1M chunks
 	buf := make([]byte, 1<<20)
 
@@ -80,12 +82,11 @@ func upload(ctx context.Context, req *proto.UploadReq, rd io.Reader) (err error)
 		}
 		log.Infof("Streamed %d bytes of file", n)
 
-		var resp proto.UploadResp
 		if err = strm.RecvMsg(&resp); err != nil {
 			return
 		}
-		log.Infof("Received response %s", resp.String())
 	}
+	log.Infof("Received response %s", resp.String())
 
 	return
 }

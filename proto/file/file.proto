@@ -6,14 +6,25 @@ import "google/protobuf/timestamp.proto";
 
 service File {
 	rpc Upload(stream UploadReq) returns (UploadResp) {}
+	rpc Download(DownloadReq) returns (stream DownloadResp) {}
 }
 
 message UploadReq {
-	string checksum = 1;
-	bytes data = 2;
+	bytes data = 1;
+	string checksum = 2;
 }
 
 message UploadResp {
 	string id = 1;
 	google.protobuf.Timestamp timestamp = 2;
+}
+
+message DownloadReq {
+	string id = 1;
+}
+
+message DownloadResp {
+	bytes data = 1;
+	google.protobuf.Timestamp timestamp = 2;
+	string checksum = 3;
 }
