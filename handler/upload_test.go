@@ -33,7 +33,7 @@ func TestUpload(t *testing.T) {
 
 	ctx := metadata.Set(context.TODO(), "Alias", "vehicles")
 
-	f, _ := os.Open("./file_test.jpeg")
+	f, _ := os.Open("./upload_test.jpeg")
 	req := proto.UploadReq{
 		Checksum: "todo_checksum",
 	}
