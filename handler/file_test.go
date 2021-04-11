@@ -65,7 +65,6 @@ func upload(ctx context.Context, req *proto.UploadReq, rd io.Reader) (err error)
 		if err == io.EOF {
 			err = nil
 			log.Infof("Finished uploading file")
-			time.Sleep(100 * time.Millisecond) // TODO: need to see why without this line the server cannot receive EOF
 			break
 		}
 		if err != nil {
