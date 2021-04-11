@@ -37,6 +37,9 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 	defer func() {
 		if err != nil && err != io.EOF {
 			log.Errorf("Failed to receive file! err=[%s] metadata=[%+v] fileinfo=[%+v]", err.Error(), md, fileinfo)
+
+			_ = os.RemoveAll(name)
+
 			return
 		}
 
