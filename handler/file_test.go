@@ -13,6 +13,7 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/config"
 	log "github.com/micro/go-micro/v2/logger"
+	"github.com/micro/go-micro/v2/metadata"
 	"github.com/micro/go-micro/v2/server"
 
 	"github.com/bimoyong/go-file/handler"
@@ -30,9 +31,9 @@ func TestUpload(t *testing.T) {
 	}()
 	time.Sleep(time.Second)
 
-	ctx := context.TODO()
+	ctx := metadata.Set(context.TODO(), "Alias", "vehicles")
 
-	f, _ := os.Open("./file_test")
+	f, _ := os.Open("./file_test.jpeg")
 	req := proto.UploadReq{
 		Checksum: "todo_checksum",
 	}
