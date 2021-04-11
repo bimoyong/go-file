@@ -1,6 +1,7 @@
 package util
 
 import (
+	"math"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -21,7 +22,8 @@ func NewName(buffer []byte, base string) (name string, err error) {
 	}
 
 	// Only the first 512 bytes are used to sniff the content type.
-	cntType := http.DetectContentType(buffer[:512])
+	l := math.Min(float64(len(buffer)), 512)
+	cntType := http.DetectContentType(buffer[:int(l)])
 
 	var exts []string
 	if exts, err = mime.ExtensionsByType(cntType); err != nil {
