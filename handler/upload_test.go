@@ -63,8 +63,7 @@ func upload(ctx context.Context, req *proto.UploadReq, rd io.Reader) (err error)
 	log.Infof("Stream file for every chunk size %d", 1<<20)
 	for {
 		var n int
-		n, err = rd.Read(buf)
-		if err == io.EOF {
+		if n, err = rd.Read(buf); err == io.EOF {
 			err = nil
 			log.Infof("Finished uploading file")
 			break

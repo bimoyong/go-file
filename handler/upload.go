@@ -44,6 +44,7 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			return
 		}
 
+		err = nil
 	}()
 
 	for {
@@ -58,9 +59,11 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			return
 		}
 
-		if checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Data)); checksum != chunk.Checksum {
-			err = status.Errorf(codes.DataLoss, "incorrect checksum: expect %s but given %s", chunk.Checksum, checksum)
-			return
+		if chunk.Checksum != "" {
+			if checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Data)); checksum != chunk.Checksum {
+				err = status.Errorf(codes.DataLoss, "incorrect checksum: expect %s but given %s", chunk.Checksum, checksum)
+				return
+			}
 		}
 
 		if size += len(chunk.Data); size > sizeMax {
