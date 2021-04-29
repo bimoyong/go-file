@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/micro/go-micro/v2/config"
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/metadata"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	proto "github.com/bimoyong/go-file/proto/file"
 	"github.com/bimoyong/go-file/util"
@@ -74,7 +74,7 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 
 		if file == nil {
 			base := filepath.Join(config.Get("dir_base").String(""), md["Alias"])
-			if name, err = util.NewName(chunk.Data, base); err != nil {
+			if name, err = util.NewName(base, chunk.Data); err != nil {
 				err = status.Errorf(codes.Internal, "error determining file name: %s", err.Error())
 				return
 			}
@@ -87,10 +87,9 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			defer file.Close()
 
 			fileinfo, _ = file.Stat()
-			tm, _ := ptypes.TimestampProto(fileinfo.ModTime())
 			resp = proto.UploadResp{
 				Id:        strings.TrimSuffix(fileinfo.Name(), path.Ext(fileinfo.Name())),
-				Timestamp: tm,
+				Timestamp: timestamppb.New(fileinfo.ModTime()),
 			}
 		}
 

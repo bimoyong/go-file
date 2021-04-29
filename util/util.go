@@ -12,7 +12,7 @@ import (
 )
 
 // NewName function
-func NewName(buffer []byte, base string) (name string, err error) {
+func NewName(base string, buffer ...[]byte) (name string, err error) {
 	id := primitive.NewObjectID()
 	sub := id.Timestamp().Format("2006-01-02")
 
@@ -21,6 +21,20 @@ func NewName(buffer []byte, base string) (name string, err error) {
 		return
 	}
 
+	var ext string
+	if len(buffer) > 0 {
+		if ext, err = DetectExtension(buffer[0]); err != nil {
+			return
+		}
+	}
+
+	name = filepath.Join(dir, id.Hex()) + ext
+
+	return
+}
+
+// DetectExtension function
+func DetectExtension(buffer []byte) (extension string, err error) {
 	// Only the first 512 bytes are used to sniff the content type.
 	l := math.Min(float64(len(buffer)), 512)
 	cntType := http.DetectContentType(buffer[:int(l)])
@@ -30,9 +44,8 @@ func NewName(buffer []byte, base string) (name string, err error) {
 		return
 	}
 
-	name = filepath.Join(dir, id.Hex())
 	if len(exts) > 0 {
-		name += exts[0]
+		extension = exts[0]
 	}
 
 	return
