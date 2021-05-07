@@ -73,7 +73,7 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 		log.Debugf("Received %d bytes of file %s", size, name)
 
 		if file == nil {
-			base := filepath.Join(config.Get("dir_base").String(""), md["Alias"])
+			base := filepath.Join(config.Get("dir_base").String(""), md["Domain"], md["Alias"])
 			if name, err = util.NewName(base, chunk.Data); err != nil {
 				err = status.Errorf(codes.Internal, "error determining file name: %s", err.Error())
 				return
