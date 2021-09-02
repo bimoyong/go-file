@@ -32,7 +32,7 @@ func TestUpload(t *testing.T) {
 	time.Sleep(time.Second)
 
 	ctx := metadata.Set(context.TODO(), "Domain", "staging")
-	ctx := metadata.Set(context.TODO(), "Alias", "vehicles")
+	ctx = metadata.Set(context.TODO(), "Alias", "vehicles")
 
 	f, _ := os.Open("./upload_test.jpeg")
 	req := proto.UploadReq{
