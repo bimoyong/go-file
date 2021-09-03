@@ -4,4 +4,5 @@ bin
 config.json
 go.sum
 log
+resource_test
 vendor
