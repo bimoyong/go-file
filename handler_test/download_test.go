@@ -43,9 +43,6 @@ func TestDownload(t *testing.T) {
 	}
 	defer strm.Close()
 
-	size := 0
-	resp := proto.DownloadResp{}
-
 	fname := filepath.Join(os.TempDir(), fmt.Sprintf("%s.jpg", req.Id))
 	f, err := os.Create(fname)
 	if err != nil {
@@ -53,25 +50,29 @@ func TestDownload(t *testing.T) {
 	}
 	defer f.Close()
 
+	size := int64(0)
+	resp := proto.DownloadResp{}
+
 	t.Logf("Start downloading file %s", fname)
 	for {
 		err := strm.RecvMsg(&resp)
 		if err == io.EOF {
 			break
-		} else if err != nil {
-			t.Fatalf("Error downloading file! %s", err.Error())
+		}
+		if err != nil {
+			t.Fatalf("Error downloading! %s", err.Error())
 		}
 
 		n, err := f.Write(resp.Data)
 		if err != nil {
-			t.Fatalf("Error writing file: %s", err.Error())
+			t.Fatalf("Error writing file! %s", err.Error())
 		}
 		checksum := fmt.Sprintf("%x", sha1.Sum(resp.Data))
 		if checksum != resp.Checksum {
 			t.Fatalf("Incorrect checksum! Expect %s but given %s", checksum, resp.Checksum)
 		}
 
-		size += n
+		size += int64(n)
 		t.Logf("Downloaded %d bytes of file", size)
 	}
 
@@ -79,9 +80,7 @@ func TestDownload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error stating file! %s", err.Error())
 	}
-	t.Logf("File size: %d bytes", finfo.Size())
-
-	if size != 577855 {
+	if finfo.Size() != 577855 {
 		t.Errorf("File is not downloaded fully! Expect %d bytes", 577855)
 	}
 
