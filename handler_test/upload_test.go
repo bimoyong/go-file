@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"context"
@@ -9,15 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/client"
-	"github.com/micro/go-micro/v2/config"
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/metadata"
-	"github.com/micro/go-micro/v2/server"
 
-	"github.com/bimoyong/go-file/handler"
 	proto "github.com/bimoyong/go-file/proto/file"
+	test "github.com/bimoyong/go-file/test"
 )
 
 // TestUpload function
@@ -25,16 +22,16 @@ func TestUpload(t *testing.T) {
 	var err error
 
 	go func() {
-		if err = startService(); err != nil {
+		if err = test.StartService(); err != nil {
 			t.Error(err)
 		}
 	}()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 
 	ctx := metadata.Set(context.TODO(), "Domain", "staging")
-	ctx = metadata.Set(context.TODO(), "Alias", "vehicles")
+	ctx = metadata.Set(ctx, "Alias", "vehicles")
 
-	f, _ := os.Open("./upload_test.jpeg")
+	f, _ := os.Open("../resource_test/12032006.jpeg")
 	req := proto.UploadReq{
 		Checksum: "todo_checksum",
 	}
@@ -43,12 +40,10 @@ func TestUpload(t *testing.T) {
 		t.Error(err)
 	}
 	t.Logf("Test done")
-
-	return
 }
 
 func upload(ctx context.Context, req *proto.UploadReq, rd io.Reader) (err error) {
-	srv := proto.NewFileService("go.srv.file", client.DefaultClient)
+	srv := proto.NewFileService(test.ServerName, client.DefaultClient)
 	var strm proto.File_UploadService
 	if strm, err = srv.Upload(ctx); err != nil {
 		err = fmt.Errorf("failed to upload file: %s", err.Error())
@@ -89,20 +84,4 @@ func upload(ctx context.Context, req *proto.UploadReq, rd io.Reader) (err error)
 	log.Infof("Received response %s", resp.String())
 
 	return
-}
-
-func startService() error {
-	config.DefaultConfig.Set("../data", "dir_base")
-	config.DefaultConfig.Set(524288000, "bytes_limit")
-
-	service := micro.NewService()
-
-	server.DefaultServer = service.Server()
-	server.DefaultServer.Init(
-		server.Name("go.srv.file"),
-	)
-
-	proto.RegisterFileHandler(server.DefaultServer, new(handler.File))
-
-	return service.Run()
 }
