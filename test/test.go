@@ -15,7 +15,7 @@ const ServerName = "go.srv.file"
 
 // StartService function
 func StartService() error {
-	config.DefaultConfig.Set("./data", "dir_base")
+	config.DefaultConfig.Set("../resource_test", "dir_base")
 	config.DefaultConfig.Set(500<<20, "bytes_limit")
 
 	service := micro.NewService()
