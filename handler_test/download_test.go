@@ -22,7 +22,7 @@ import (
 func TestDownload(t *testing.T) {
 	go func() {
 		if err := test.StartService(); err != nil {
-			t.Error(err)
+			t.Errorf("Error starting service! %s", err.Error())
 		}
 	}()
 	time.Sleep(time.Second * 2)
@@ -39,7 +39,7 @@ func TestDownload(t *testing.T) {
 	srv := proto.NewFileService(test.ServerName, client.DefaultClient)
 	strm, err := srv.Download(ctx, &req)
 	if err != nil {
-		t.Fatalf("Failed to download file! %s", err.Error())
+		t.Fatalf("Error handshaking download service! %s", err.Error())
 	}
 	defer strm.Close()
 

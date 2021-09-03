@@ -13,6 +13,7 @@ import (
 
 const ServerName = "go.srv.file"
 
+// StartService function
 func StartService() error {
 	config.DefaultConfig.Set("./data", "dir_base")
 	config.DefaultConfig.Set(500<<20, "bytes_limit")
@@ -23,11 +24,9 @@ func StartService() error {
 	client.DefaultClient = service.Client()
 
 	server.DefaultServer.Init(
+		server.Name(ServerName),
 		server.WrapSubscriber(userver.LogWrapper),
 		server.WrapSubscriber(userver.AuthWrapper),
-	)
-	server.DefaultServer.Init(
-		server.Name(ServerName),
 	)
 
 	proto.RegisterFileHandler(server.DefaultServer, new(handler.File))
