@@ -13,7 +13,6 @@ import (
 	"github.com/micro/go-micro/v2/metadata"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	proto "github.com/bimoyong/go-file/proto/file"
 	ufile "github.com/bimoyong/go-util/file"
 )
 
@@ -76,10 +75,11 @@ func DetermineChunkSize(md metadata.Metadata) (chunk_size_int int64) {
 	return
 }
 
-func Checksum(chunk *proto.Chunk, data []byte) (err error) {
-	checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Data))
-	if checksum != chunk.Checksum {
-		err = fmt.Errorf("expect %s but given %s", checksum, chunk.Checksum)
+// Checksum function checks whether checksum string is match with given data using SHA1
+func Checksum(checksum string, data []byte) (err error) {
+	actChecksum := fmt.Sprintf("%x", sha1.Sum(data))
+	if actChecksum != checksum {
+		err = fmt.Errorf("expect %s but given %s", actChecksum, checksum)
 	}
 
 	return
