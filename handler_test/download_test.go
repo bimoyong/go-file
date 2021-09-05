@@ -2,7 +2,6 @@ package handler_test
 
 import (
 	"context"
-	"crypto/sha1"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +15,7 @@ import (
 
 	proto "github.com/bimoyong/go-file/proto/file"
 	test "github.com/bimoyong/go-file/test"
+	"github.com/bimoyong/go-file/util"
 )
 
 // TestDownload function
@@ -63,13 +63,13 @@ func TestDownload(t *testing.T) {
 			t.Fatalf("Error downloading! %s", err.Error())
 		}
 
-		n, err := f.Write(resp.Data)
+		n, err := f.Write(resp.Chunk.Data)
 		if err != nil {
 			t.Fatalf("Error writing file! %s", err.Error())
 		}
-		checksum := fmt.Sprintf("%x", sha1.Sum(resp.Data))
-		if checksum != resp.Checksum {
-			t.Fatalf("Incorrect checksum! Expect %s but given %s", checksum, resp.Checksum)
+
+		if err := util.Checksum(resp.Chunk, resp.Chunk.Data); err != nil {
+			t.Fatalf("Incorrect checksum! %s", err.Error())
 		}
 
 		size += int64(n)

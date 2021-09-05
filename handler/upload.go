@@ -26,7 +26,7 @@ type File struct {
 }
 
 // Upload function
-func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err error) {
+func (h *File) Upload(ctx context.Context, strm proto.File_UploadStream) (err error) {
 	md, _ := metadata.FromContext(ctx)
 	var resp proto.UploadResp
 	var name string
@@ -49,7 +49,7 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 
 	for {
 		var chunk *proto.UploadReq
-		chunk, err = stream.Recv()
+		chunk, err = strm.Recv()
 		if err == io.EOF {
 			log.Infof("Finished receiving file %s", name)
 			break
@@ -59,14 +59,14 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			return
 		}
 
-		if chunk.Checksum != "" {
-			if checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Data)); checksum != chunk.Checksum {
-				err = status.Errorf(codes.DataLoss, "incorrect checksum: expect %s but given %s", chunk.Checksum, checksum)
+		if chunk.Chunk.Checksum != "" {
+			if checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Chunk.Data)); checksum != chunk.Chunk.Checksum {
+				err = status.Errorf(codes.DataLoss, "incorrect checksum: expect %s but given %s", chunk.Chunk.Checksum, checksum)
 				return
 			}
 		}
 
-		if size += len(chunk.Data); size > sizeMax {
+		if size += len(chunk.Chunk.Data); size > sizeMax {
 			err = status.Errorf(codes.ResourceExhausted, "file is too large: %d > %d", size, sizeMax)
 			return
 		}
@@ -74,7 +74,7 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 
 		if file == nil {
 			base := filepath.Join(config.Get("dir_base").String(""), md["Domain"], md["Alias"])
-			if name, err = util.NewName(base, chunk.Data); err != nil {
+			if name, err = util.NewName(base, chunk.Chunk.Data); err != nil {
 				err = status.Errorf(codes.Internal, "error determining file name: %s", err.Error())
 				return
 			}
@@ -93,12 +93,12 @@ func (h *File) Upload(ctx context.Context, stream proto.File_UploadStream) (err 
 			}
 		}
 
-		if _, err = file.Write(chunk.Data); err != nil {
+		if _, err = file.Write(chunk.Chunk.Data); err != nil {
 			err = status.Errorf(codes.Internal, "error writing file name %s: %s", name, err.Error())
 			return
 		}
 
-		if err = stream.SendMsg(&resp); err != nil {
+		if err = strm.SendMsg(&resp); err != nil {
 			return
 		}
 	}

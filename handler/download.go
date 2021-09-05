@@ -33,7 +33,7 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 		}
 	}()
 
-	var resp proto.DownloadResp
+	resp := proto.DownloadResp{Chunk: &proto.Chunk{}}
 	var size = int64(0)
 	buf := make([]byte, util.DetermineChunkSize(md))
 
@@ -81,8 +81,8 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 				CreatedAt: timestamppb.New(finfo.ModTime()),
 			}
 		}
-		resp.Data = buf[:n]
-		resp.Checksum = fmt.Sprintf("%x", sha1.Sum(buf[:n]))
+		resp.Chunk.Data = buf[:n]
+		resp.Chunk.Checksum = fmt.Sprintf("%x", sha1.Sum(buf[:n]))
 		resp.Timestamp = timestamppb.New(time.Now())
 
 		if err = strm.SendMsg(&resp); err != nil {

@@ -1,17 +1,20 @@
 package util
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"math"
 	"mime"
 	"net/http"
 	"path/filepath"
 	"strconv"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	ufile "github.com/bimoyong/go-util/file"
 	"github.com/micro/go-micro/v2/config"
 	"github.com/micro/go-micro/v2/metadata"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	proto "github.com/bimoyong/go-file/proto/file"
+	ufile "github.com/bimoyong/go-util/file"
 )
 
 // NewName function
@@ -68,6 +71,15 @@ func DetermineChunkSize(md metadata.Metadata) (chunk_size_int int64) {
 	}
 	if !ok {
 		chunk_size_int = chunk_size_limit
+	}
+
+	return
+}
+
+func Checksum(chunk *proto.Chunk, data []byte) (err error) {
+	checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Data))
+	if checksum != chunk.Checksum {
+		err = fmt.Errorf("expect %s but given %s", checksum, chunk.Checksum)
 	}
 
 	return
