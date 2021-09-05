@@ -5,10 +5,13 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	ufile "github.com/bimoyong/go-util/file"
+	"github.com/micro/go-micro/v2/config"
+	"github.com/micro/go-micro/v2/metadata"
 )
 
 // NewName function
@@ -46,6 +49,25 @@ func DetectExtension(buffer []byte) (extension string, err error) {
 
 	if len(exts) > 0 {
 		extension = exts[0]
+	}
+
+	return
+}
+
+// DetermineChunkSize function return chunk size given by client but not over server's limit
+func DetermineChunkSize(md metadata.Metadata) (chunk_size_int int64) {
+	var err error
+
+	chunk_size_limit := int64(config.Get("chunk_size_limit").Int(1 << 20))
+	chunk_size, ok := md.Get("Chunk-Size")
+	if ok {
+		chunk_size_int, err = strconv.ParseInt(chunk_size, 10, 64)
+		if err != nil || chunk_size_int <= 0 || chunk_size_limit < chunk_size_int {
+			ok = false
+		}
+	}
+	if !ok {
+		chunk_size_int = chunk_size_limit
 	}
 
 	return

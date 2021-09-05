@@ -29,7 +29,7 @@ func TestDownload(t *testing.T) {
 
 	ctx := metadata.Set(context.TODO(), "Domain", "staging")
 	ctx = metadata.Set(ctx, "Alias", "vehicles")
-	ctx = metadata.Set(ctx, "Chunk_Size", "10240000")
+	ctx = metadata.Set(ctx, "Chunk-Size", "102400")
 	md, _ := metadata.FromContext(ctx)
 
 	req := proto.DownloadReq{
