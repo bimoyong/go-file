@@ -25,6 +25,14 @@ message DownloadReq {
 
 message DownloadResp {
 	bytes data = 1;
-	google.protobuf.Timestamp timestamp = 2;
-	string checksum = 3;
+	string checksum = 2;
+	Description desc = 3;
+	google.protobuf.Timestamp timestamp = 4;
+}
+
+message Description {
+	string id = 1;
+	string ext = 2;
+	int64 size = 3;
+	google.protobuf.Timestamp created_at = 4;
 }

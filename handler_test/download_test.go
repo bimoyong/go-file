@@ -29,19 +29,19 @@ func TestDownload(t *testing.T) {
 
 	ctx := metadata.Set(context.TODO(), "Domain", "staging")
 	ctx = metadata.Set(ctx, "Alias", "vehicles")
+	ctx = metadata.Set(ctx, "Chunk_Size", "10240000")
 	md, _ := metadata.FromContext(ctx)
 
 	req := proto.DownloadReq{
 		Id: "todo_id",
 	}
-	t.Logf("Setup! metadata=[%+v] req=[%s]", md, req.String())
-
 	srv := proto.NewFileService(test.ServerName, client.DefaultClient)
 	strm, err := srv.Download(ctx, &req)
 	if err != nil {
 		t.Fatalf("Error handshaking download service! %s", err.Error())
 	}
 	defer strm.Close()
+	t.Logf("Setup! metadata=[%+v] req=[%s]", md, req.String())
 
 	fname := filepath.Join(os.TempDir(), fmt.Sprintf("%s.jpg", req.Id))
 	f, err := os.Create(fname)
@@ -50,8 +50,8 @@ func TestDownload(t *testing.T) {
 	}
 	defer f.Close()
 
+	var resp proto.DownloadResp
 	size := int64(0)
-	resp := proto.DownloadResp{}
 
 	t.Logf("Start downloading file %s", fname)
 	for {
@@ -75,6 +75,8 @@ func TestDownload(t *testing.T) {
 		size += int64(n)
 		t.Logf("Downloaded %d bytes of file", size)
 	}
+
+	t.Logf("File info: %s", resp.Desc)
 
 	finfo, err := f.Stat()
 	if err != nil {
