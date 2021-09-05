@@ -23,8 +23,6 @@ import (
 
 // Download function
 func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.File_DownloadStream) (err error) {
-	log.Info("Download done!")
-
 	md, _ := metadata.FromContext(ctx)
 
 	// check chunk size given by client is not over server's limit
@@ -43,7 +41,7 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 
 	defer func() {
 		if err != nil {
-			log.Errorf("Failed to send file! err=[%s] metadata=[%+v] fileinfo=[%+v]", err.Error(), md, "fileinfo")
+			log.Errorf("Failed to send file! err=[%s] metadata=[%+v] fileinfo=[%+v]", err.Error(), md, req.Id)
 
 			return
 		}
@@ -55,6 +53,7 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 
 	var id primitive.ObjectID
 	if id, err = primitive.ObjectIDFromHex(req.Id); err != nil {
+		log.Warnf("Magic request! %s", err.Error())
 		err = status.Errorf(codes.NotFound, "ID %s not found!", req.Id)
 		return
 	}
@@ -67,6 +66,7 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 	)
 	var finfo os.FileInfo
 	if finfo, err = os.Stat(fname); os.IsNotExist(err) {
+		log.Errorf("File does not exist! %s", err.Error())
 		err = status.Errorf(codes.NotFound, "ID %s not found!", req.Id)
 		return
 	}
@@ -76,14 +76,14 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 	log.Infof("Send file for every chunk size %d", cap(buf))
 	for {
 		var n int
-		n, err = f.Read(buf)
-		if err == io.EOF {
-			err = nil
+		if n, err = f.Read(buf); err == io.EOF {
 			log.Infof("Finished sending file")
+			err = nil
 			break
 		}
 		if err != nil {
-			err = fmt.Errorf("error reading file: %s", err.Error())
+			log.Errorf("Error reading file! %s", err.Error())
+			err = status.Error(codes.Internal, "Internal server error")
 			break
 		}
 
@@ -100,7 +100,7 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 		resp.Timestamp = timestamppb.New(time.Now())
 
 		if err = strm.SendMsg(&resp); err != nil {
-			err = fmt.Errorf("error sending file: %s", err.Error())
+			log.Errorf("Error sending file %s", err.Error())
 			break
 		}
 	}
