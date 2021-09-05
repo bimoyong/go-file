@@ -10,8 +10,7 @@ service File {
 }
 
 message UploadReq {
-	bytes data = 1;
-	string checksum = 2;
+	Chunk chunk = 1;
 }
 
 message UploadResp {
@@ -24,10 +23,14 @@ message DownloadReq {
 }
 
 message DownloadResp {
+	Chunk chunk = 1;
+	Description desc = 2;
+	google.protobuf.Timestamp timestamp = 3;
+}
+
+message Chunk {
 	bytes data = 1;
 	string checksum = 2;
-	Description desc = 3;
-	google.protobuf.Timestamp timestamp = 4;
 }
 
 message Description {
