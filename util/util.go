@@ -76,8 +76,8 @@ func DetermineChunkSize(md metadata.Metadata) (chunk_size_int int64) {
 }
 
 // Checksum function checks whether checksum string is match with given data using SHA1
-func Checksum(checksum string, data []byte) (err error) {
-	actChecksum := fmt.Sprintf("%x", sha1.Sum(data))
+func Checksum(checksum string, data []byte) (actChecksum string, err error) {
+	actChecksum = fmt.Sprintf("%x", sha1.Sum(data))
 	if actChecksum != checksum {
 		err = fmt.Errorf("expect %s but given %s", actChecksum, checksum)
 	}

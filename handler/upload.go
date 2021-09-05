@@ -2,8 +2,6 @@ package handler
 
 import (
 	"context"
-	"crypto/sha1"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -59,11 +57,10 @@ func (h *File) Upload(ctx context.Context, strm proto.File_UploadStream) (err er
 			return
 		}
 
-		if chunk.Chunk.Checksum != "" {
-			if checksum := fmt.Sprintf("%x", sha1.Sum(chunk.Chunk.Data)); checksum != chunk.Chunk.Checksum {
-				err = status.Errorf(codes.DataLoss, "incorrect checksum: expect %s but given %s", chunk.Chunk.Checksum, checksum)
-				return
-			}
+		var checksum string
+		if checksum, err = util.Checksum(chunk.Chunk.Checksum, chunk.Chunk.Data); err != nil {
+			err = status.Errorf(codes.DataLoss, "Incorrect checksum! Expect %s but given %s", chunk.Chunk.Checksum, checksum)
+			return
 		}
 
 		if size += len(chunk.Chunk.Data); size > sizeMax {

@@ -68,8 +68,8 @@ func TestDownload(t *testing.T) {
 			t.Fatalf("Error writing file! %s", err.Error())
 		}
 
-		if err := util.Checksum(resp.Chunk.Checksum, resp.Chunk.Data); err != nil {
-			t.Fatalf("Incorrect checksum! %s", err.Error())
+		if checksum, err := util.Checksum(resp.Chunk.Checksum, resp.Chunk.Data); err != nil {
+			t.Fatalf("Incorrect checksum! Expect %s but given %s", resp.Chunk.Checksum, checksum)
 		}
 
 		size += int64(n)
