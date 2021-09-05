@@ -13,6 +13,9 @@ import (
 	"github.com/micro/go-micro/v2/config"
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/metadata"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	proto "github.com/bimoyong/go-file/proto/file"
@@ -49,12 +52,26 @@ func (h *File) Download(ctx context.Context, req *proto.DownloadReq, strm proto.
 	var resp proto.DownloadResp
 	var size = int64(0)
 	buf := make([]byte, chunk_size_int)
-	f, _ := os.Open("../resource_test/12032006.jpeg")
 
-	finfo, err := f.Stat()
-	if err != nil {
-		log.Errorf("Error stating file! %s", err.Error())
+	var id primitive.ObjectID
+	if id, err = primitive.ObjectIDFromHex(req.Id); err != nil {
+		err = status.Errorf(codes.NotFound, "ID %s not found!", req.Id)
+		return
 	}
+	id.Timestamp().Format("2006-01-02")
+	fname := filepath.Join(
+		config.Get("dir_base").String(""),
+		md["Domain"], md["Alias"],
+		id.Timestamp().Format("2006-01-02"),
+		req.Id+".jpeg",
+	)
+	var finfo os.FileInfo
+	if finfo, err = os.Stat(fname); os.IsNotExist(err) {
+		err = status.Errorf(codes.NotFound, "ID %s not found!", req.Id)
+		return
+	}
+	f, _ := os.Open(fname)
+	defer f.Close()
 
 	log.Infof("Send file for every chunk size %d", cap(buf))
 	for {

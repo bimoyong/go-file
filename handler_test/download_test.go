@@ -33,7 +33,7 @@ func TestDownload(t *testing.T) {
 	md, _ := metadata.FromContext(ctx)
 
 	req := proto.DownloadReq{
-		Id: "todo_id",
+		Id: "6131f2f9ccb6e0ba045e07b4",
 	}
 	srv := proto.NewFileService(test.ServerName, client.DefaultClient)
 	strm, err := srv.Download(ctx, &req)
